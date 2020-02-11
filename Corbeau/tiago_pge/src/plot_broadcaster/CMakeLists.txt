@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tiago_move_arm_visu)
+project(plot_broadcaster)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -10,12 +10,10 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED
   geometry_msgs
   roscpp
-  tiago_move_arm_pylon
   tf
   zone_ground_pylon
   move_base_msgs
   visualization_msgs
-  tiago_move_arm_visu
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -111,7 +109,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES tiago_move_arm_visu
+  LIBRARIES plot_broadcaster
   CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 ) 
@@ -128,9 +126,9 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
-  src/CollisionBox.cpp
-)
+#add_library(${PROJECT_NAME}
+#  src/CollisionBox.cpp
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -140,10 +138,8 @@ add_library(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/tiago_move_arm_visu_node.cpp)
-add_executable(follow_path src/follow_path.cpp)
-add_executable(follow_path_simple src/follow_path_simple.cpp)
-add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
+# add_executable(${PROJECT_NAME}_node src/plot_broadcaster_node.cpp)
+add_executable(plot_broadcaster src/plot_broadcaster.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -156,9 +152,7 @@ add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(follow_path ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(follow_path_simple ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(follow_path_without_arm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(plot_broadcaster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
@@ -166,9 +160,7 @@ add_dependencies(follow_path_without_arm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${c
 #   ${catkin_LIBRARIES}
 # )
 
-target_link_libraries(follow_path ${catkin_LIBRARIES})
-target_link_libraries(follow_path_simple ${catkin_LIBRARIES})
-target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
+target_link_libraries(plot_broadcaster ${catkin_LIBRARIES})
 
 
 #############
@@ -186,9 +178,7 @@ target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
 # )
 
 install(TARGETS
-        follow_path
-        follow_path_simple
-        follow_path_without_arm
+        plot_broadcaster
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -226,7 +216,7 @@ install(TARGETS
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_tiago_move_arm_visu.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_plot_broadcaster.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

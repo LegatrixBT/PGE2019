@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>tiago_move_arm_visu</name>
+  <name>plot_broadcaster</name>
   <version>0.0.0</version>
-  <description>The tiago_move_arm_visu package</description>
+  <description>The plot_broadcaster package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/tiago_move_arm_visu</url> -->
+  <!-- <url type="website">http://wiki.ros.org/plot_broadcaster</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -51,19 +51,16 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>tiago_move_arm_pylon</build_depend>
+
   <build_depend>visualization_msgs</build_depend>
-  <build_depend>zone_ground_pylon</build_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>tiago_move_arm_pylon</build_export_depend>
+
   <build_export_depend>visualization_msgs</build_export_depend>
-  <build_export_depend>zone_ground_pylon</build_export_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>tiago_move_arm_pylon</exec_depend>
+
   <exec_depend>visualization_msgs</exec_depend>
-  <exec_depend>zone_ground_pylon</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

@@ -26,7 +26,7 @@ std::vector <std::vector<double> > Generate_circular_poi::generate_circle(int nu
 	for (float angle=0; angle<2*M_PI; angle+=pas){
 		points[0][k] = (double) points[0][k] + radius * cos(angle) + posOriX;
 		points[1][k] = (double) points[1][k] + radius * sin(angle) + posOriY;
-		points[2][k] = 1.2/numOfPoints * k + posOriZ;
+		points[2][k] = 0.95/numOfPoints * k + posOriZ + .3;
 		k++;
 	}
 
@@ -83,7 +83,7 @@ std::vector <std::vector<double> > Generate_circular_poi::bestChemin(std::vector
                                     std::array<double,4> pointSortie){
     
 
-    std::vector <std::vector<double> > chemin1(3,std::vector<double>()); // (1, std::vector<double>(3));
+    std::vector <std::vector<double> > chemin1(4,std::vector<double>()); // (1, std::vector<double>(3));
 
 	int cptChemin1;
 	//std::cout << "Chemin num 1 : ";
@@ -103,7 +103,7 @@ std::vector <std::vector<double> > Generate_circular_poi::bestChemin(std::vector
 	
 	// std::cout << std::endl;
 
-	std::vector <std::vector<double> > chemin2(3,std::vector<double>()); 
+	std::vector <std::vector<double> > chemin2(4,std::vector<double>()); 
 
 	int cptChemin2;
 	//std::cout << "Chemin num 2 : ";
@@ -124,10 +124,19 @@ std::vector <std::vector<double> > Generate_circular_poi::bestChemin(std::vector
 		}
 	}
 
+
+	std::vector <std::vector<double> > bestChemin(4,std::vector<double>()); 
     if(cptChemin1 < cptChemin2) // on retourne le chemin le plus court
-        return chemin1;
+        bestChemin =  chemin1;
     else
-        return chemin2;
+        bestChemin = chemin2;
+
+	// on ajoute le point de sortie au chemin 
+	bestChemin[0].push_back(pointSortie[0]);
+	bestChemin[1].push_back(pointSortie[1]);
+	bestChemin[2].push_back(pointSortie[2]);
+	bestChemin[3].push_back(pointSortie[3]);
+	return bestChemin;
 }
 
 // genere la trajectoire entre deux points en passant par le cercle de traj
