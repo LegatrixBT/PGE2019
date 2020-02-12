@@ -17,7 +17,7 @@
 // Own pkgs
 #include <tiago_move_arm_pylon/plan_arm_torso_ik_pylon.h>
 #include <zone_ground_pylon/generate_circular_poi.h>
-#include <tiago_move_arm_visu/CollisionBox.h>
+#include <tiago_reachable_box/ReachableBox.h>
 
 using namespace tiago_move_arm_pylon;
 using namespace zone_ground_pylon;
@@ -359,7 +359,7 @@ int main(int argc, char** argv)
   box_reachable.pose.position.z = 0.9;
   box_reachable.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
   
-  CollisionBox boiteTest(box_reachable.pose.position.x,box_reachable.pose.position.y,box_reachable.pose.position.z,1.7f,1.7f,1.9f); // equivalent de la sphere en marker 
+  ReachableBox boiteTest(box_reachable.pose.position.x,box_reachable.pose.position.y,box_reachable.pose.position.z,1.7f,1.7f,1.9f); // equivalent de la sphere en marker 
 
   geometry_msgs::PoseStamped point_to_test;
   point_to_test.header.frame_id = "pylon";
@@ -370,13 +370,11 @@ int main(int argc, char** argv)
 
   geometry_msgs::PoseStamped point_arm_1_link = transform(point_to_test,"arm_1_link");
 
-  if(boiteTest.isCollision(point_to_test.pose.position.x,point_to_test.pose.position.y,point_to_test.pose.position.z) == true)
+  if(boiteTest.isReachable(point_to_test.pose.position.x,point_to_test.pose.position.y,point_to_test.pose.position.z) == true)
     std::cout <<  "Une collision existe" << std::endl;
   else
     std::cout << "Aucune collision" << std::endl;
   
-  
-
   while(ros::ok()){
   // definition de la forme du marker de passage 
   formes = visualization_msgs::Marker::SPHERE;

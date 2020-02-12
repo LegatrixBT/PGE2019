@@ -7,19 +7,21 @@
 #include <move_base_msgs/MoveBaseActionResult.h>
 
 tf::Transform transform;
-int cpt_passage = 10;
-moveit_msgs::CollisionObject co;
+int cpt_passage = 0;
+// Need to be global to the replace after the base moved
+moveit_msgs::CollisionObject co_pylon;
+ros::Publisher collision_object_publisher;
 
-moveit_msgs::CollisionObject add_pylon_world() {
+void add_pylon_world() {
 	//Vector to scale 3D file
-	Eigen::Vector3d vectorScale(1.2, 1.2, 1.2);
-	// Define a collision object ROS message.
-	moveit_msgs::CollisionObject pylon_object;
+	Eigen::Vector3d vectorScale(2.0, 2.0, 1.2);
+
 	// The id of the object is used to identify it.
-	pylon_object.id = "pylon_cao";
+	co_pylon.id = "pylon_cao";
 
 	//Path where the .dae or .stl object is located
-	shapes::Mesh* m = shapes::createMeshFromResource("file:////home/pge/tiago_pge/src/pylon_world_tf/config/pylon.dae", vectorScale); 
+	//shapes::Mesh* m = shapes::createMeshFromResource("file:////home/pal/tiago_pge/src/pylon_world_tf/config/pylon.dae", vectorScale); //Ordi
+	shapes::Mesh* m = shapes::createMeshFromResource("file:////home/pal/deployed_ws/share/pylon_world_tf/config/pylone_echelle_low_res.dae", vectorScale); //TIAGO
 	ROS_INFO("Your mesh was loaded");
 
 	shape_msgs::Mesh mesh;
@@ -28,23 +30,73 @@ moveit_msgs::CollisionObject add_pylon_world() {
 	mesh = boost::get<shape_msgs::Mesh>(mesh_msg);
 
 	//Define a pose for your mesh (specified relative to frame_id)
-	pylon_object.header.frame_id = "/map";
+	co_pylon.header.frame_id = "/pylon";
 	geometry_msgs::Pose obj_pose;
-	obj_pose.position.x = transform.getOrigin().x();
-	obj_pose.position.y = transform.getOrigin().y();
-	obj_pose.position.z = transform.getOrigin().z();
-	obj_pose.orientation.x = transform.getRotation().x();
-	obj_pose.orientation.y = transform.getRotation().y();
-	obj_pose.orientation.z = transform.getRotation().z();
-	obj_pose.orientation.w = transform.getRotation().w();
+	obj_pose.position.x = 0;
+	obj_pose.position.y = 0;
+	obj_pose.position.z = 0;
+	obj_pose.orientation.x = 0;
+	obj_pose.orientation.y = 0;
+	obj_pose.orientation.z = 0;
+	obj_pose.orientation.w = 0;
 
 	// Add the mesh to the Collision object message 
-	pylon_object.meshes.push_back(mesh);
-	pylon_object.mesh_poses.push_back(obj_pose);
-	pylon_object.operation = pylon_object.ADD;
+	co_pylon.meshes.push_back(mesh);
+	co_pylon.mesh_poses.push_back(obj_pose);
+	
+	co_pylon.operation = co_pylon.ADD;
+	
+	// Publish the CAO to RVIZ
+	while(collision_object_publisher.getNumSubscribers() < 1)
+	{
+		ROS_INFO_STREAM("Waiting for /collision_object topic");
+		ros::WallDuration sleep_t(0.5);
+		sleep_t.sleep();
+	}
+	collision_object_publisher.publish(co_pylon); // Initial publish of the pylon CAO in RVIZ
+	// To move the CAO after the move of the mobile base
+	co_pylon.operation = co_pylon.MOVE;
+}
 
-	// Return the CollisionObject to be published periodically in RVIZ
-	return pylon_object;
+void add_ground_world() {	
+	moveit_msgs::CollisionObject co_ground;
+	
+	// The id of the object is used to identify it.
+	co_ground.id = "ground";
+
+	shape_msgs::SolidPrimitive primitive_ground;
+	primitive_ground.type = primitive_ground.BOX;
+	primitive_ground.dimensions.resize(3);
+	primitive_ground.dimensions[0] = 10;
+	primitive_ground.dimensions[1] = 10;
+	primitive_ground.dimensions[2] = 0.4;
+
+
+	//Define a pose for your mesh (specified relative to frame_id)
+	co_ground.header.frame_id = "base_footprint";
+	geometry_msgs::Pose obj_pose;
+	obj_pose.position.x = 0;
+	obj_pose.position.y = 0;
+	obj_pose.position.z = 0;
+	obj_pose.orientation.x = 0;
+	obj_pose.orientation.y = 0;
+	obj_pose.orientation.z = 0;
+	obj_pose.orientation.w = 0;
+
+	// Add the primitive to the Collision object message 
+	co_ground.primitives.push_back(primitive_ground);
+	co_ground.primitive_poses.push_back(obj_pose);
+	
+	co_ground.operation = co_ground.ADD;
+	
+	// Publish the CAO to RVIZ
+	while(collision_object_publisher.getNumSubscribers() < 1)
+	{
+		ROS_INFO_STREAM("Waiting for /collision_object topic");
+		ros::WallDuration sleep_t(0.5);
+		sleep_t.sleep();
+	}
+	collision_object_publisher.publish(co_ground);
 }
 
 void pylonPoseCallback(const geometry_msgs::PoseStamped& msg)
@@ -54,55 +106,46 @@ void pylonPoseCallback(const geometry_msgs::PoseStamped& msg)
 		transform.setRotation(tf::Quaternion(msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w));
 		cpt_passage++;
 	}
+	else if(cpt_passage == 10) { //To add one time
+		add_pylon_world();
+		cpt_passage++;
+	}
 }
 
 void baseGoalReached(const move_base_msgs::MoveBaseActionResult& msg) {
 	ROS_INFO_STREAM(msg.status.text);
 
 	if(msg.status.text == "Goal reached.") {
-		ros::NodeHandle nh("~");
-		ros::Publisher collision_object_publisher = nh.advertise<moveit_msgs::CollisionObject>("/collision_object", 1);
 		while(collision_object_publisher.getNumSubscribers() < 1)
 		{
 			ROS_INFO_STREAM("Waiting for /collision_object topic");
 			ros::WallDuration sleep_t(0.5);
 			sleep_t.sleep();
 		}
-		collision_object_publisher.publish(co); // Re-pose of the pylon CAO in RVIZ
+		collision_object_publisher.publish(co_pylon); // Re-pose of the pylon CAO in RVIZ
 	}
 }
 
 int main(int argc, char** argv){
 	ros::init(argc, argv, "pylon_world_tf_broadcaster");
 	ros::NodeHandle nh("~");
+	collision_object_publisher = nh.advertise<moveit_msgs::CollisionObject>("/collision_object", 1000);
+	
 	tf::TransformBroadcaster br;
-	ros::Subscriber sub = nh.subscribe("/aruco_single/pose", 100, pylonPoseCallback);
-	// transform.setOrigin(tf::Vector3(-1, -1, -1));
-	// transform.setRotation(tf::Quaternion(-1, -1, -1, -1));
 	transform.setOrigin(tf::Vector3(0, 0, 0));
 	transform.setRotation(tf::Quaternion(0, 0, 0, 1));
+	ros::Subscriber sub_aruco = nh.subscribe("/aruco_single/pose", 1000, pylonPoseCallback);
 
 	ros::Subscriber sub_goal_reached = nh.subscribe("/move_base/result", 1000, baseGoalReached);
 	
-	co = add_pylon_world();
-	ros::Publisher collision_object_publisher = nh.advertise<moveit_msgs::CollisionObject>("/collision_object", 1);
-	while(collision_object_publisher.getNumSubscribers() < 1)
-	{
-		ROS_INFO_STREAM("Waiting for /collision_object topic");
-		ros::WallDuration sleep_t(0.5);
-		sleep_t.sleep();
-	}
-	collision_object_publisher.publish(co); // Initial publish of the pylon CAO in RVIZ
-	co.meshes.clear();
-	co.operation = co.MOVE;
-
-	ros::Rate rate(10.0); //Hertz
+	add_ground_world();
+	ros::Rate rate(100.0); //Hertz
 	while (nh.ok()){
-	if(cpt_passage > 9) {
-		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/map", "/pylon"));
-	}
-		ros::spinOnce();
-		rate.sleep();
+		if(cpt_passage > 9) {
+			br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/map", "/pylon"));
+		}
+			ros::spinOnce();
+			rate.sleep();
 	}
 	return 0;
 };

@@ -1,0 +1,8 @@
+<launch>
+
+	<rosparam command="load" file="$(find tiago_move)/config/tiago_head_motions.yaml"/>	
+	<node pkg="play_motion" type="run_motion" name="run_motion_head" args="head_look_around"/>	
+
+	<node pkg="pylon_world_tf" type="pylon_world_tf_broadcaster" name="pylon_world_tf_broadcaster" />
+
+</launch>

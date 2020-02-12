@@ -7,7 +7,7 @@ add_compile_options(-std=c++11)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED
+find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   tiago_move_arm_pylon
@@ -15,7 +15,7 @@ find_package(catkin REQUIRED
   zone_ground_pylon
   move_base_msgs
   visualization_msgs
-  tiago_move_arm_visu
+  #tiago_move_arm_visu
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -112,7 +112,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES tiago_move_arm_visu
-  CATKIN_DEPENDS roscpp
+  CATKIN_DEPENDS geometry_msgs roscpp tiago_move_arm_pylon visualization_msgs
 #  DEPENDS system_lib
 ) 
 
@@ -135,14 +135,15 @@ add_library(${PROJECT_NAME}
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/tiago_move_arm_visu_node.cpp)
-add_executable(follow_path_simple src/follow_path_simple.cpp)
-add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
+
+#add_executable(follow_path_simple src/follow_path_simple.cpp)
+#add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -155,17 +156,17 @@ add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(follow_path_simple ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(follow_path_without_arm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(follow_path_simple ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(follow_path_without_arm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
 
-target_link_libraries(follow_path_simple ${catkin_LIBRARIES})
-target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
+#target_link_libraries(follow_path_simple ${catkin_LIBRARIES})
+#target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
 
 
 #############
@@ -182,11 +183,11 @@ target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-install(TARGETS
-        follow_path_simple
-        follow_path_without_arm
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#install(TARGETS
+        #follow_path_simple
+        #follow_path_without_arm
+   #RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 
 
 ## Mark executables for installation
@@ -197,11 +198,11 @@ install(TARGETS
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME}
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
  install(DIRECTORY include/${PROJECT_NAME}/

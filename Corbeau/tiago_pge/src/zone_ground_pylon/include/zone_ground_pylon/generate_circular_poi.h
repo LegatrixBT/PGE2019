@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
+#include <vector>
+#include <array>
 
 namespace zone_ground_pylon
 {
