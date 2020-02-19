@@ -13,6 +13,10 @@
 
 #include <zone_ground_pylon/generate_circular_poi.h>
 
+
+#define __NB_POINTS_BASE_FOOTPRINT__ 8
+
+
 geometry_msgs::PoseStamped transform(geometry_msgs::PoseStamped source_frame, std::string target_frameid) {
   ros::NodeHandle nh("~");
   double rate_hz;
@@ -83,7 +87,7 @@ ros::Publisher marker_pub = node.advertise<visualization_msgs::Marker>("visualiz
   // set de la duree du marker
   pointsApprocheBaseFootprint.lifetime = ros::Duration();
 
-  //map_pose
+    //map_pose
   geometry_msgs::PoseStamped map_frame;
   map_frame.header.frame_id = "map";
   map_frame.pose.position.x = 0;
@@ -93,21 +97,15 @@ ros::Publisher marker_pub = node.advertise<visualization_msgs::Marker>("visualiz
 
 
   geometry_msgs::PoseStamped pylon_in_map_frame = transform(map_frame, "pylon");
-
-	// read params from plot_pylon_tf.launch
-	int nb_pts_cercle = -1;
-	node.getParam("/nb_pts_base_footprint", nb_pts_cercle);
-	float rayon_cercle = -1.0;
-	node.getParam("/rayon_base_footprint", rayon_cercle);
   
   //generation d'un cercle 
   ROS_INFO_STREAM("GENERATION DU CERCLE EN COURS ...");
-  std::vector <std::vector<double> > cercle = gen_poi.generate_circle(nb_pts_cercle, rayon_cercle, 0, 0, 0, 0);
+  std::vector <std::vector<double> > cercle = gen_poi.generate_circle(__NB_POINTS_BASE_FOOTPRINT__, 1.70, 0.0, 0.0, 0.0, 0.0);
  
 
   // creation de la liste de cubes 
   //positionnement des markers dans le monde 
-  for(uint32_t i = 0; i < nb_pts_cercle; ++i){
+  for(uint32_t i = 0; i < __NB_POINTS_BASE_FOOTPRINT__; ++i){
     geometry_msgs::Point p;
     p.x = cercle[0][i];
     p.y = cercle[1][i];
@@ -129,16 +127,19 @@ ros::Publisher marker_pub = node.advertise<visualization_msgs::Marker>("visualiz
   /*--------Publication des frames correspondants aux plots -----------*/
 
     tf::TransformBroadcaster br;
+    std::array<tf::Transform, __NB_POINTS_BASE_FOOTPRINT__> ensembleFramePlot;
+
     int iPoint;
-		tf::Transform tf_tmp;
 
     ros::Rate rate(100); //100Hz
     while(node.ok()){
-        for(iPoint = 0 ; iPoint < nb_pts_cercle ; iPoint++){
-						tf_tmp.setOrigin(tf::Vector3(cercle[0][iPoint],cercle[1][iPoint],0));
-						tf_tmp.setRotation(tf::Quaternion(0,0,atan2(cercle[1][iPoint],cercle[0][iPoint])+ (M_PI/2))); //Fait déjà la conversion rawpitchyall
-						br.sendTransform(tf::StampedTransform(tf_tmp,ros::Time::now(),"pylon","plot_" + std::to_string(iPoint)));
+
+        for(iPoint = 0 ; iPoint < __NB_POINTS_BASE_FOOTPRINT__ ; iPoint++){
+            ensembleFramePlot[iPoint].setOrigin(tf::Vector3(cercle[0][iPoint],cercle[1][iPoint],0));
+            ensembleFramePlot[iPoint].setRotation(tf::Quaternion(0,0,atan2(cercle[1][iPoint],cercle[0][iPoint]) + (M_PI/2) + (M_PI/10))); //Fait déjà la conversion rawpitchyall
+            br.sendTransform(tf::StampedTransform(ensembleFramePlot[iPoint],ros::Time::now(),"pylon","plot_" + std::to_string(iPoint)));
         }
+
         rate.sleep();
     }
 

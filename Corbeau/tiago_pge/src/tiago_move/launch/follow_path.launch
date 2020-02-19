@@ -1,0 +1,9 @@
+<launch>
+	<param name="nb_pts_paths" value="10"/>
+	<param name="rayon_cercle_arm" value="0.85"/>
+	<param name="planner_id" value="ESTkConfigDefault"/>
+
+	<node pkg="tiago_move" type="follow_path" name="follow_path">
+	</node>
+
+</launch>

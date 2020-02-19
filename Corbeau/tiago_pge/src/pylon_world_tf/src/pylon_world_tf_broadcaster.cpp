@@ -20,8 +20,7 @@ void add_pylon_world() {
 	co_pylon.id = "pylon_cao";
 
 	//Path where the .dae or .stl object is located
-	//shapes::Mesh* m = shapes::createMeshFromResource("file:////home/pal/tiago_pge/src/pylon_world_tf/config/pylon.dae", vectorScale); //Ordi
-	shapes::Mesh* m = shapes::createMeshFromResource("file:////home/pal/deployed_ws/share/pylon_world_tf/config/pylone_echelle_low_res.dae", vectorScale); //TIAGO
+	shapes::Mesh* m = shapes::createMeshFromResource("package://pylon_world_tf/config/pylone_echelle_low_res.dae", vectorScale);
 	ROS_INFO("Your mesh was loaded");
 
 	shape_msgs::Mesh mesh;
@@ -35,10 +34,7 @@ void add_pylon_world() {
 	obj_pose.position.x = 0;
 	obj_pose.position.y = 0;
 	obj_pose.position.z = 0;
-	obj_pose.orientation.x = 0;
-	obj_pose.orientation.y = 0;
-	obj_pose.orientation.z = 0;
-	obj_pose.orientation.w = 0;
+	obj_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
 
 	// Add the mesh to the Collision object message 
 	co_pylon.meshes.push_back(mesh);
@@ -58,7 +54,7 @@ void add_pylon_world() {
 	co_pylon.operation = co_pylon.MOVE;
 }
 
-void add_ground_world() {	
+moveit_msgs::CollisionObject add_ground_world() {	
 	moveit_msgs::CollisionObject co_ground;
 	
 	// The id of the object is used to identify it.
@@ -78,10 +74,7 @@ void add_ground_world() {
 	obj_pose.position.x = 0;
 	obj_pose.position.y = 0;
 	obj_pose.position.z = 0;
-	obj_pose.orientation.x = 0;
-	obj_pose.orientation.y = 0;
-	obj_pose.orientation.z = 0;
-	obj_pose.orientation.w = 0;
+	obj_pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
 
 	// Add the primitive to the Collision object message 
 	co_ground.primitives.push_back(primitive_ground);
@@ -97,6 +90,8 @@ void add_ground_world() {
 		sleep_t.sleep();
 	}
 	collision_object_publisher.publish(co_ground);
+
+	return co_ground;
 }
 
 void pylonPoseCallback(const geometry_msgs::PoseStamped& msg)
@@ -138,14 +133,28 @@ int main(int argc, char** argv){
 
 	ros::Subscriber sub_goal_reached = nh.subscribe("/move_base/result", 1000, baseGoalReached);
 	
-	add_ground_world();
+	moveit_msgs::CollisionObject co_ground = add_ground_world();
+
 	ros::Rate rate(100.0); //Hertz
 	while (nh.ok()){
 		if(cpt_passage > 9) {
 			br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/map", "/pylon"));
 		}
-			ros::spinOnce();
-			rate.sleep();
+		ros::spinOnce();
+		rate.sleep();
 	}
+
+	// Remove the ground and the pylon COs on RVIZ
+	/*	
+	co_ground.operation = co_ground.REMOVE;
+	co_pylon.operation = co_pylon.REMOVE;
+	while(collision_object_publisher.getNumSubscribers() < 1) {
+		ROS_INFO_STREAM("Waiting for /collision_object topic");
+		ros::WallDuration sleep_t(0.5);
+		sleep_t.sleep();
+	}
+	collision_object_publisher.publish(co_ground);
+	collision_object_publisher.publish(co_pylon);*/
+
 	return 0;
 };

@@ -10,17 +10,17 @@ void Move_tiago_arm::add_aptere(){
   moveit_msgs::AttachedCollisionObject attached_object;
   attached_object.link_name = "gripper_grasping_frame";
   /* The header must contain a valid TF frame*/
-  attached_object.object.header.frame_id = "gripper_link";
+  attached_object.object.header.frame_id = "gripper_grasping_frame";
   /* The id of the object */
   attached_object.object.id = "sys_aptere_box";
   attached_object.object.header.stamp = ros::Time::now();
 
-	/* Box pose */
-	geometry_msgs::Pose pose;
+  /* Box pose */
+  geometry_msgs::Pose pose;
 	pose.position.x = 0.1;
-	pose.position.y = 0.06;
-	pose.position.z = -0.275;
-	pose.orientation.w = 1.0;
+	pose.position.y = -0.08;
+	pose.position.z = 0.05;
+  pose.orientation.w = 1.0;
 
   /* Define a box to be attached */
   shape_msgs::SolidPrimitive primitive;
@@ -46,21 +46,6 @@ void Move_tiago_arm::add_aptere(){
       sleep_t.sleep();
     }
     publisher.publish(attached_object);
-}
-
-void Move_tiago_arm::remove_aptere() {
-	moveit_msgs::AttachedCollisionObject attached_object;
-	attached_object.object.id = "sys_aptere_box";
-	attached_object.object.operation = attached_object.object.REMOVE;
-
-	ros::NodeHandle nh;
-	ros::Publisher publisher = nh.advertise<moveit_msgs::AttachedCollisionObject>("/attached_collision_object", 1000);
-	while(publisher.getNumSubscribers() < 1) {
-		ROS_INFO_STREAM("Waiting for /attached_collision_object topic");
-		ros::WallDuration sleep_t(0.5);
-		sleep_t.sleep();
-	}
-	publisher.publish(attached_object);
 }
 
 void Move_tiago_arm::go_to_point_arm_tool_link(geometry_msgs::PoseStamped goal_pose_pylon_frame) {
@@ -104,7 +89,7 @@ void Move_tiago_arm::go_to_point_arm_tool_link(geometry_msgs::PoseStamped goal_p
 
   group_arm_torso.setPoseReferenceFrame("base_footprint");
   group_arm_torso.setPoseTarget(goal_pose_base_footprint_frame);
-	group_arm_torso.setEndEffectorLink("arm_tool_link");
+	group_arm_torso.setEndEffectorLink("gripper_grasping_frame");
   
   //set_ground_constraint(group_arm_torso);
 
@@ -112,34 +97,35 @@ void Move_tiago_arm::go_to_point_arm_tool_link(geometry_msgs::PoseStamped goal_p
                   group_arm_torso.getEndEffectorLink() << " to a target pose expressed in " <<
                   group_arm_torso.getPlanningFrame());
 
-	//group_arm_torso.setStartStateToCurrentState();
-	group_arm_torso.setMaxVelocityScalingFactor(0.60);
+  //group_arm_torso.setStartStateToCurrentState();
+  group_arm_torso.setMaxVelocityScalingFactor(0.60);
 	//group_arm_torso.setNumPlanningAttemps(5);
-	//moveit::planning_interface::MoveItErrorCode e;
-	//do {
-	moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-	//set maximum time to find a plan
-	group_arm_torso.setPlanningTime(6.0);
-	group_arm_torso.setStartState(*group_arm_torso.getCurrentState());
+	moveit::planning_interface::MoveItErrorCode e;
+	do {
+		moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+		//set maximum time to find a plan
+		group_arm_torso.setPlanningTime(6.0);
+		group_arm_torso.setStartState(*group_arm_torso.getCurrentState());
 
-	bool success = bool(group_arm_torso.plan(my_plan));
+		bool success = bool(group_arm_torso.plan(my_plan));
 
-	if ( !success )
-	  throw std::runtime_error("No plan found");
+		//if ( !success )
+		  //throw std::runtime_error("No plan found");
 
-	ROS_INFO_STREAM("Plan found in " << my_plan.planning_time_ << " seconds");
+		ROS_INFO_STREAM("Plan found in " << my_plan.planning_time_ << " seconds");
 
-	// Execute the plan
-	ros::Time start = ros::Time::now();
+		// Execute the plan
+		ros::Time start = ros::Time::now();
 
-	moveit::planning_interface::MoveItErrorCode e = group_arm_torso.move();
-	e = group_arm_torso.move();
-	if (!bool(e))
-	  throw std::runtime_error("Error executing plan");
-	  //ROS_INFO_STREAM("Error during execution");
+		//moveit::planning_interface::MoveItErrorCode e = group_arm_torso.move();
+		e = group_arm_torso.move();
+		if (!bool(e))
+		  //throw std::runtime_error("Error executing plan");
+		  ROS_INFO_STREAM("Error during execution");
 
-	ROS_INFO_STREAM("Motion duration: " << (ros::Time::now() - start).toSec());
-	//} while(!bool(e));
+  	ROS_INFO_STREAM("Motion duration: " << (ros::Time::now() - start).toSec());
+  } while(!bool(e));
 
   spinner.stop();
+
 }

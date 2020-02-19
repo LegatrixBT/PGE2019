@@ -1,0 +1,4 @@
+<launch>
+	<param name="planner_id" value="ESTkConfigDefault"/>
+	<node pkg = "tiago_move" type="go_to_touch" name="go_to_touch"/>
+</launch>

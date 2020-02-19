@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 	Move_tiago_arm tiago_arm;
 
 	MoveBaseClient ac("move_base", true);
-	tiago_arm.add_aptere();
+	//tiago_arm.add_aptere();
 	geometry_msgs::PoseStamped arm_goal_pose;
 	arm_goal_pose.header.frame_id = "pylon";
 	arm_goal_pose.pose.position.x = -0.1;
@@ -70,7 +70,8 @@ int main(int argc, char** argv)
 	tiago_arm.go_to_point_arm_tool_link(arm_goal_pose);
 	arm_goal_pose.pose.position.y = -0.3;
 	tiago_arm.go_to_point_arm_tool_link(arm_goal_pose);
-
+	
+	ros::shutdown();
 	return 0;
 }
 

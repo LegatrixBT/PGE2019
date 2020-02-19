@@ -17,6 +17,7 @@
 // Own pkgs
 #include <tiago_move_arm_pylon/plan_arm_torso_ik_pylon.h>
 #include <zone_ground_pylon/generate_circular_poi.h>
+#include <tiago_reachable_box/ReachableBox.h>
 
 using namespace tiago_move_arm_pylon;
 using namespace zone_ground_pylon;
@@ -61,9 +62,28 @@ geometry_msgs::PoseStamped transform(geometry_msgs::PoseStamped source_frame, st
   return goal_pose_frame;
 }
 
-void show_markers(ros::Publisher marker_pub, int nb_pts_cercle, float rayon_cercle_base_footprint) {
-	Generate_circular_poi gen_poi;
-	
+std::array<double,3> getPoseOT(std::string frame){
+
+    // lecture de la position de l'OT 
+    geometry_msgs::PoseStamped gripper_grasping_frame;
+    gripper_grasping_frame.header.frame_id = "gripper_grasping_frame";
+    gripper_grasping_frame.pose.position.x = 0;
+    gripper_grasping_frame.pose.position.y = 0;
+    gripper_grasping_frame.pose.position.z = 0;
+    gripper_grasping_frame.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
+
+    // tranforme de la position de l'OT dans le repere frame choisi en paramètre
+    geometry_msgs::PoseStamped gripper_grasping_frame_base_footprint_frame = transform(gripper_grasping_frame, frame);
+
+    std::array<double,3> pointOT = { { gripper_grasping_frame_base_footprint_frame.pose.position.x,
+                                       gripper_grasping_frame_base_footprint_frame.pose.position.y,
+                                       gripper_grasping_frame_base_footprint_frame.pose.position.z} };
+
+    return pointOT;
+
+    }
+
+void show_markers() {
 	/*---------- LISTE DE POINTS DE PASSAGE -----------*/
 
 	// definition de la forme du marker de passage 
@@ -115,82 +135,22 @@ void show_markers(ros::Publisher marker_pub, int nb_pts_cercle, float rayon_cerc
 	// publication des markers 
 	while (marker_pub.getNumSubscribers() < 1){
 		if (!ros::ok()) {
-			return;
+			return 0;
 		}
 		ROS_WARN_ONCE("Dans Rviz ajouter un marker pour visualiser les points");
 		sleep(1);
 	}
 	marker_pub.publish(pointsPassage); //publication de la liste des points de passage
-	
+	// marker_pub.publish(pointsApprocheBaseFootprint); //publication de la liste des points de passage
 	// ---------------------- FIN AFFICHAGE ----------------------------- // 
 }
 
-geometry_msgs::PoseStamped next_base_footprint(std::string num_next_plot, geometry_msgs::PoseStamped pt1) {
-	ROS_INFO_STREAM("Demande de transformation frame");
-	geometry_msgs::PoseStamped arm_goal_in_plot_frame = transform(pt1,"plot_"+num_next_plot);
-	ROS_INFO_STREAM("Transformation effectuee");
-
-	geometry_msgs::PoseStamped arm_goal_in_base_footprint_frame = arm_goal_in_plot_frame;
-	arm_goal_in_base_footprint_frame.header.frame_id = "base_footprint";
-
-	return arm_goal_in_base_footprint_frame;
-}
-
-void moves_plot(int num_plot, MoveBaseClient& ac, move_base_msgs::MoveBaseGoal base_goal, Move_tiago_arm tiago_arm, geometry_msgs::PoseStamped pt1, geometry_msgs::PoseStamped pt2) {
-
-	ROS_INFO_STREAM("Deplacement vers le plot "+std::to_string(num_plot));
-	base_goal.target_pose.header.frame_id = "plot_"+std::to_string(num_plot);
+void moves_plot(std::string num_plot, MoveBaseClient ac, move_base_msgs::MoveBaseGoal base_goal, geometry_msgs::PoseStamped pt1, geometry_msgs::PoseStamped pt2) {
+	ROS_INFO_STREAM("Deplacement vers le plot "+num_plot);
+	base_goal.target_pose.header.frame_id = "plot_"+num_plot;
 	go_to_point_base_footprint(base_goal,ac);
 	ac.waitForResult();
 
-	//geometry_msgs::PoseStamped pt1_next_plot_frame = next_base_footprint(std::to_string(num_plot), pt1);
-	//ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
-	//tiago_arm.go_to_point_arm_tool_link(pt1_next_plot_frame);
-	//ac.waitForResult();
-	
-	tiago_arm.go_to_point_arm_tool_link(pt1);
-
-	if(pt2.header.frame_id != "null") {
-		ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
-		tiago_arm.go_to_point_arm_tool_link(pt2);
-	}
-}
-
-int main(int argc, char** argv)
-{
-	ros::init(argc, argv, "move_learned_pts");
-
-	Move_tiago_arm tiago_arm;
-	MoveBaseClient ac("move_base", true);
-
-	// read params from follow_path.launch
-	ros::NodeHandle nh;
-	int nb_pts_cercle = -1;
-	nh.getParam("/nb_pts_base_footprint", nb_pts_cercle);
-	float rayon_cercle_base_footprint = -1.0;
-	nh.getParam("/rayon_base_footprint", rayon_cercle_base_footprint);
-
-	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1); 
-
-	show_markers(marker_pub, nb_pts_cercle, rayon_cercle_base_footprint);
-
-	tiago_arm.add_aptere();
-
-	// Déclaration de la variable pour la base mobile
-	move_base_msgs::MoveBaseGoal base_goal;
-	base_goal.target_pose.pose.position.x = 0; 
-	base_goal.target_pose.pose.position.y = 0;
-	base_goal.target_pose.pose.position.z = 0;
-	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
-
-	// Déclaration des variables pour les pts du bras
-	geometry_msgs::PoseStamped pt1;
-	pt1.header.frame_id = "pylon";
-
-	geometry_msgs::PoseStamped pt2;
-	pt2.header.frame_id = "pylon";
-
-	// ---------------------- PLOT 0 ----------------------------- //
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = 0.973;
@@ -209,9 +169,66 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.y = 0.701;
 	pt2.pose.orientation.z = -0.696;
 	pt2.pose.orientation.w = 0.137;
-	moves_plot(0, ac, base_goal, tiago_arm, pt1, pt2);
+
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+
+	if(pt2.header.frame_id != "null") {
+		ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+		tiago_arm.go_to_point_arm_tool_link(pt2);
+	}
+}
+
+
+int main(int argc, char** argv)
+{
+	ros::init(argc, argv, "move_learned_pts");
+
+	Move_tiago_arm tiago_arm;
+	Generate_circular_poi gen_poi;
+	MoveBaseClient ac("move_base", true);
+
+	// read params from follow_path.launch
+	ros::NodeHandle nh;
+	int nb_pts_cercle = -1;
+	nh.getParam("/nb_pts_base_footprint", nb_pts_cercle);
+
+	float rayon_cercle_base_footprint = -1.0;
+	nh.getParam("/rayon_base_footprint", rayon_cercle_base_footprint);
+
+	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1); 
+	// CHANGER LE NOM DU PUBLISHER POUR FAIRE UN AFFICHAGE PAR COUCHE DES POINTS 
+
+	show_markers();
+
+	tiago_arm.add_aptere();
+
+	// Déclaration de la variable pour la base mobile
+	move_base_msgs::MoveBaseGoal base_goal;
+
+	base_goal.target_pose.pose.position.x = 0; 
+	base_goal.target_pose.pose.position.y = 0;
+	base_goal.target_pose.pose.position.z = 0;
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+
+	// Déclaration des variables pour les pts du bras
+	geometry_msgs::PoseStamped pt1;
+	pt1.header.frame_id = "pylon";
+
+	geometry_msgs::PoseStamped pt2;
+	pt2.header.frame_id = "pylon";
+
+	// ---------------------- PLOT 0 ----------------------------- //
+	moves_plot("0", ac, base_goal, pt1, pt2);
 
 	// ---------------------- PLOT 1 ----------------------------- //
+	moves_plot("1", ac, base_goal, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement vers le plot 1");
+	base_goal.target_pose.header.frame_id = "plot_1";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = 0.424;
@@ -231,9 +248,18 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.z = -0.539;
 	pt2.pose.orientation.w = 0.404;
 
-	moves_plot(1, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+	tiago_arm.go_to_point_arm_tool_link(pt2);
 
 	// ---------------------- PLOT 2 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 2");
+	base_goal.target_pose.header.frame_id = "plot_2";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = -0.387;
@@ -253,9 +279,18 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.z = -0.303;
 	pt2.pose.orientation.w = 0.622;
 
-	moves_plot(2, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+	tiago_arm.go_to_point_arm_tool_link(pt2);
 
 	// ---------------------- PLOT 3 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 3");
+	base_goal.target_pose.header.frame_id = "plot_3";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = -0.995;
@@ -275,9 +310,18 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.z = -0.003;
 	pt2.pose.orientation.w = 0.678;
 
-	moves_plot(3, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+	tiago_arm.go_to_point_arm_tool_link(pt2);
 
 	// ---------------------- PLOT 4 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 4");
+	base_goal.target_pose.header.frame_id = "plot_4";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = -0.612;
@@ -288,12 +332,16 @@ int main(int argc, char** argv)
 	pt1.pose.orientation.z = 0.273;
 	pt1.pose.orientation.w = 0.653;
 
-	// Pas de deuxieme point
-	pt2.header.frame_id = "null";
-
-	moves_plot(4, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
 
 	// ---------------------- PLOT 5 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 5");
+	base_goal.target_pose.header.frame_id = "plot_5";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = -0.145;
@@ -305,7 +353,6 @@ int main(int argc, char** argv)
 	pt1.pose.orientation.w = 0.572;
 
 	// pt2
-	pt2.header.frame_id = "pylon";
 	pt2.pose.position.x = -0.153;
 	pt2.pose.position.y = -0.741;
 	pt2.pose.position.z = 1.044;
@@ -314,9 +361,18 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.z = 0.445;
 	pt2.pose.orientation.w = 0.572;
 
-	moves_plot(5, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+	tiago_arm.go_to_point_arm_tool_link(pt2);
 
 	// ---------------------- PLOT 6 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 6");
+	base_goal.target_pose.header.frame_id = "plot_6";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = 0.687;
@@ -336,9 +392,18 @@ int main(int argc, char** argv)
 	pt2.pose.orientation.z = 0.591;
 	pt2.pose.orientation.w = 0.390;
 
-	moves_plot(6, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 2");
+	tiago_arm.go_to_point_arm_tool_link(pt2);
 
 	// ---------------------- PLOT 7 ----------------------------- //
+	ROS_INFO_STREAM("Deplacement vers le plot 7");
+	base_goal.target_pose.header.frame_id = "plot_7";
+	base_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0.5236);
+	go_to_point_base_footprint(base_goal,ac);
+	ac.waitForResult();
+
 	// Déclaration des pts pour le bras pour le plot courant
 	// pt1
 	pt1.pose.position.x = 1.103;
@@ -349,12 +414,10 @@ int main(int argc, char** argv)
 	pt1.pose.orientation.z = -0.648;
 	pt1.pose.orientation.w = -0.213;
 
-	// Pas de deuxieme point
-	pt2.header.frame_id = "null";
-	moves_plot(7, ac, base_goal, tiago_arm, pt1, pt2);
+	ROS_INFO_STREAM("Deplacement du bras vers le pt 1");
+	tiago_arm.go_to_point_arm_tool_link(pt1);
 
-	tiago_arm.remove_aptere();
 
-	return 0;
+  return 0;
 
 }

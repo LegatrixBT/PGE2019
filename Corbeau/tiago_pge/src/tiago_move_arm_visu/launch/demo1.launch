@@ -1,8 +1,0 @@
-<launch>
-
-	<rosparam command="load" file="$(find tiago_move)/config/tiago_init_position.yaml"/>
-	<node pkg="play_motion" type="run_motion" name="run_motion_arm" args="initial_position"/>
-
-	<node pkg = "tiago_move_arm_visu" type="follow_path_without_arm" name="follow_path_without_arm" launch-prefix="bash -c 'sleep 6; $0 $@'"/>
-
-</launch>
