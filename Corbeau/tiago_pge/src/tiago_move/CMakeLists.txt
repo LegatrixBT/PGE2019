@@ -3,7 +3,6 @@ project(tiago_move)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -14,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   zone_ground_pylon
   move_base_msgs
+  tiago_reachable_box
+  std_msgs
+  control_msgs
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -139,6 +141,9 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(go_to_touch src/go_to_touch.cpp)
+add_executable(follow_path_without_arm src/follow_path_without_arm.cpp)
+add_executable(follow_path src/follow_path.cpp)
+add_executable(approche src/approche.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -149,11 +154,16 @@ add_executable(go_to_touch src/go_to_touch.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(go_to_touch ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(follow_path_without_arm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(follow_path ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(approche ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(go_to_touch
-   ${catkin_LIBRARIES}
+target_link_libraries(go_to_touch ${catkin_LIBRARIES}
 )
+target_link_libraries(follow_path_without_arm ${catkin_LIBRARIES})
+target_link_libraries(follow_path ${catkin_LIBRARIES})
+target_link_libraries(approche ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -171,8 +181,12 @@ target_link_libraries(go_to_touch
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS go_to_touch
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+install(TARGETS 
+	go_to_touch
+	follow_path_without_arm
+	follow_path
+  approche
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 ## Mark libraries for installation
